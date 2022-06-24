@@ -240,7 +240,6 @@ def get_eqgame_pid_list() -> list[int]:
     pid_list = list()
     for p in psutil.process_iter(['name']):
         if p.info['name'] == 'eqgame.exe':
-            print(p)
             pid_list.append(p.pid)
     return pid_list
 
