@@ -1,8 +1,11 @@
 import re
 import os
 import signal
-import subprocess
 from datetime import datetime
+
+
+import psutil
+
 
 import myconfig
 import EverquestLogFile
@@ -165,6 +168,7 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
                 EverquestLogFile.starprint(f'DeathLoopVaccine:  Player Not AFK: {line}')
 
             # does this line contain a proof of life - communication
+            # this captures tells, say, group, auction, and shout channels
             regexp = f'^(You told|You say|You tell|You auction|You shout|{self.char_name} ->)'
             m = re.match(regexp, trunc_line)
             if m:
@@ -199,11 +203,13 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
             EverquestLogFile.starprint(f'    {myconfig.DEATHLOOP_DEATHS} deaths in less than '
                                        f'{myconfig.DEATHLOOP_SECONDS} seconds, with no player activity')
 
-            # get the list of eqgame.exe process ID's
-            pid_list = get_eqgame_pid_list()
+            # show all the death messages
             EverquestLogFile.starprint('Death Messages:')
             for line in self._death_list:
                 EverquestLogFile.starprint('    ' + line)
+
+            # get the list of eqgame.exe process ID's, and show them
+            pid_list = get_eqgame_pid_list()
             EverquestLogFile.starprint(f'eqgame.exe process id list = {pid_list}')
 
             # kill the eqgame.exe process / processes
@@ -226,36 +232,16 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
 
 def get_eqgame_pid_list() -> list[int]:
     """
-    get list of process ID's for eqgame.exe.
+    get list of process ID's for eqgame.exe, using psutil module
     returns a list of process ID's (in case multiple versions of eqgame.exe are somehow running)
 
     :return: list of process ID integers
     """
+
     pid_list = list()
-
-    # use wmic utility to get list of processes
-    # data comes back in a binary block, with individual lines separated by b'\r\r\n'
-    # the output of this can be seen by entering 'wmic process list brief' at the command line
-    lines = subprocess.check_output(['wmic', 'process', 'list', 'brief'])
-
-    # split the block into individual lines
-    line_list = lines.split(b'\r\r\n')
-
-    # get each line, and then split it into components
-    # 0: HandleCount
-    # 1: Name
-    # 2: Priority
-    # 3: ProcessId
-    # 4: ThreadCount
-    # 5: WorkingSetSize
-    for line in line_list:
-        # now split each line into fields
-        field_list = line.split()
-        if len(field_list) == 6:
-            if field_list[1] == b'eqgame.exe':
-                # print(f'{str(field_list[1], "utf-8)")}, {int(field_list[3])}')
-                pid_list.append(int(field_list[3]))
-
+    for p in psutil.process_iter(['name']):
+        if p.info['name'] == 'eqgame.exe':
+            pid_list.append(p.pid)
     return pid_list
 
 
