@@ -168,6 +168,7 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
                 EverquestLogFile.starprint(f'DeathLoopVaccine:  Player Not AFK: {line}')
 
             # does this line contain a proof of life - communication
+            # this captures tells, say, group, auction, and shout channels
             regexp = f'^(You told|You say|You tell|You auction|You shout|{self.char_name} ->)'
             m = re.match(regexp, trunc_line)
             if m:
