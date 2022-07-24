@@ -4,8 +4,6 @@ import re
 import threading
 import time
 
-import myconfig
-
 
 # allow for testing, by forcing the bot to read an old log file
 TEST_ELF = False
@@ -26,9 +24,14 @@ class EverquestLogFile(threading.Thread):
     # about unreferenced attribute
     _started: threading.Event
 
-    def __init__(self) -> None:
+    def __init__(self, base_directory: str, logs_directory: str, server_name: str, heartbeat: int) -> None:
         """
         ctor
+
+        :param base_directory: Base installation directory for Everquest
+        :param logs_directory: Logs directory, typically '\\logs\\'
+        :param server_name: Name of the server, i.e. 'P1999Green'
+        :param heartbeat: Number of seconds of logfile inactivity before a check is made to re-determine most recent logfile
         """
         # parent ctor
         # the daemon=True parameter causes this child thread object to terminate
@@ -36,10 +39,10 @@ class EverquestLogFile(threading.Thread):
         super().__init__(daemon=True)
 
         # instance data
-        self.base_directory = myconfig.BASE_DIRECTORY
-        self.logs_directory = myconfig.LOGS_DIRECTORY
+        self.base_directory = base_directory
+        self.logs_directory = logs_directory
         self.char_name = 'Unknown'
-        self.server_name = myconfig.SERVER_NAME
+        self.server_name = server_name
         self.filename = self.build_filename(self.char_name)
         self.file = None
 
@@ -47,7 +50,7 @@ class EverquestLogFile(threading.Thread):
         self._parsing.clear()
 
         self.prevtime = time.time()
-        self.heartbeat = myconfig.HEARTBEAT
+        self.heartbeat = heartbeat
 
     def build_filename(self, charname: str) -> str:
         """
@@ -287,7 +290,13 @@ def starprint(line: str) -> None:
 #
 def main():
     print('creating and starting elf, then sleeping for 20')
-    elf = EverquestLogFile()
+
+    base_directory = 'c:\\users\\ewjax\\Documents\\Gaming\\Everquest-Project1999'
+    logs_directory = '\\logs\\'
+    server_name = 'P1999Green'
+    heartbeat = 15
+
+    elf = EverquestLogFile(base_directory, logs_directory, server_name, heartbeat)
     elf.go()
     time.sleep(20)
 

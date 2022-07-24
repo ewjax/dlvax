@@ -1,13 +1,12 @@
 import re
 import os
 import signal
-from datetime import datetime
+import configparser
 
+from datetime import datetime
 
 import psutil
 
-
-import myconfig
 import EverquestLogFile
 
 
@@ -19,7 +18,7 @@ import EverquestLogFile
 # processes (there should usually only be one).
 #
 # We will define a death loop as any time a player experiences X deaths in Y seconds, and no player
-# activity during that time.  The values for X and Y are configurable, via the myconfig.py file.
+# activity during that time.  The values for X and Y are configurable, via the DeathLoopVaccine.ini file.
 #
 # For testing purposes, there is a back door feature, controlled by sending a tell to the following
 # non-existent player:
@@ -43,20 +42,31 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
     the class overloads the process_line() method to customize the parsing for this particular need
     """
 
-    def __init__(self):
+    def __init__(self, base_directory: str, logs_directory: str, server_name: str, heartbeat: int,
+                 deathloop_deaths: int, deathloop_seconds: int) -> None:
         """
         ctor
+
+        :param base_directory: Base installation directory for Everquest
+        :param logs_directory: Logs directory, typically '\\logs\\'
+        :param server_name: Name of the server, i.e. 'P1999Green'
+        :param heartbeat: Number of seconds of logfile inactivity before a check is made to re-determine most recent logfile
+        :param deathloop_deaths: Define a deathloop as (number of deaths) in (number of seconds)
+        :param deathloop_seconds: Define a deathloop as (number of deaths) in (number of seconds)
         """
         # parent ctor
-        super().__init__()
+        super().__init__(base_directory, logs_directory, server_name, heartbeat)
+
+        self.deathloop_deaths = deathloop_deaths
+        self.deathloop_seconds = deathloop_seconds
 
         # list of death messages
         # this will function as a scrolling queue, with the oldest message at position 0,
         # newest appended to the other end.  Older messages scroll off the list when more
-        # than myconfig.DEATHLOOP_SECONDS have elapsed.  The list is also flushed any time
+        # than deathloop_seconds have elapsed.  The list is also flushed any time
         # player activity is detected (i.e. player is not AFK).
         #
-        # if/when the length of this list meets or exceeds myconfig.DEATHLOOP_DEATHS, then
+        # if/when the length of this list meets or exceeds deathloop_deaths, then
         # the deathloop response is triggered
         self._death_list = list()
 
@@ -70,7 +80,7 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
         self._death_list.clear()
         self._kill_armed = True
 
-    def process_line(self, line):
+    def process_line(self, line: str) -> None:
         """
         This method gets called by the base class parsing thread once for each parsed line.
         We overload it here to perform our special case parsing tasks.
@@ -134,7 +144,7 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
                     oldest_time = datetime.strptime(oldest_line[0:26], '[%a %b %d %H:%M:%S %Y]')
                     elapsed_seconds = now - oldest_time
 
-                    if elapsed_seconds.total_seconds() > myconfig.DEATHLOOP_SECONDS:
+                    if elapsed_seconds.total_seconds() > self.deathloop_seconds:
                         # that death message is too old, purge it
                         self._death_list.pop(0)
                         EverquestLogFile.starprint(f'DeathLoopVaccine:  Death count = {len(self._death_list)}')
@@ -194,14 +204,14 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
         """
 
         # if the death_list contains more deaths than the limit, then trigger the process kill
-        if len(self._death_list) >= myconfig.DEATHLOOP_DEATHS:
+        if len(self._death_list) >= self.deathloop_deaths:
 
             EverquestLogFile.starprint('---------------------------------------------------')
             EverquestLogFile.starprint('DeathLoopVaccine - Killing all eqgame.exe processes')
             EverquestLogFile.starprint('---------------------------------------------------')
             EverquestLogFile.starprint('DeathLoopVaccine has detected deathloop symptoms:')
-            EverquestLogFile.starprint(f'    {myconfig.DEATHLOOP_DEATHS} deaths in less than '
-                                       f'{myconfig.DEATHLOOP_SECONDS} seconds, with no player activity')
+            EverquestLogFile.starprint(f'    {self.deathloop_deaths} deaths in less than '
+                                       f'{self.deathloop_seconds} seconds, with no player activity')
 
             # show all the death messages
             EverquestLogFile.starprint('Death Messages:')
@@ -220,6 +230,8 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
                 # self._kill_armed = True
                 if self._kill_armed:
                     os.kill(pid, signal.SIGTERM)
+                else:
+                    EverquestLogFile.starprint('(Note: Process Kill only simulated, since death(s) were simulated)')
 
             # purge any death messages from the list
             self.reset()
@@ -249,16 +261,31 @@ def get_eqgame_pid_list() -> list[int]:
 
 
 def main():
+
+    # todo - what if ini file is not present
+    # begin by reading in the config data
+    config = configparser.ConfigParser()
+    config.read('DeathLoopVaccine.ini')
+
+    base_dir = config.get('Everquest', 'BASE_DIRECTORY', fallback=None)
+    logs_dir = config.get('Everquest', 'LOGS_DIRECTORY', fallback='\\logs\\')
+    server_name = config.get('Everquest', 'SERVER_NAME', fallback='P1999Green')
+    heartbeat = config.getint('Everquest', 'HEARTBEAT', fallback=15)
+
+    dl_deaths = config.getint('DeathLoop', 'DEATHS', fallback=4)
+    dl_seconds = config.getint('DeathLoop', 'SECONDS', fallback=120)
+
+    # print a startup message
     EverquestLogFile.starprint('-------------------------------------------------')
     EverquestLogFile.starprint('DeathLoopVaccine - Help prevent DeathLoop disease')
     EverquestLogFile.starprint('-------------------------------------------------')
     EverquestLogFile.starprint(f'Checking for '
-                               f'{myconfig.DEATHLOOP_DEATHS} deaths in '
-                               f'{myconfig.DEATHLOOP_SECONDS} seconds, '
+                               f'{dl_deaths} deaths in '
+                               f'{dl_seconds} seconds, '
                                f'with no player activity in the interim (AFK)')
 
     # create and start the DLV parser
-    dlv = DeathLoopVaccine()
+    dlv = DeathLoopVaccine(base_dir, logs_dir, server_name, heartbeat, dl_deaths, dl_seconds)
     dlv.go()
 
     # note that as soon as the main thread ends, so will the child threads
