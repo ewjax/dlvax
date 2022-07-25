@@ -2,7 +2,6 @@ import re
 import os
 import signal
 import configparser
-
 from datetime import datetime
 
 import psutil
@@ -42,23 +41,25 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
     the class overloads the process_line() method to customize the parsing for this particular need
     """
 
-    def __init__(self, base_directory: str, logs_directory: str, server_name: str, heartbeat: int,
-                 deathloop_deaths: int, deathloop_seconds: int) -> None:
+    def __init__(self) -> None:
         """
         ctor
-
-        :param base_directory: Base installation directory for Everquest
-        :param logs_directory: Logs directory, typically '\\logs\\'
-        :param server_name: Name of the server, i.e. 'P1999Green'
-        :param heartbeat: Number of seconds of logfile inactivity before a check is made to re-determine most recent logfile
-        :param deathloop_deaths: Define a deathloop as (number of deaths) in (number of seconds)
-        :param deathloop_seconds: Define a deathloop as (number of deaths) in (number of seconds)
         """
-        # parent ctor
-        super().__init__(base_directory, logs_directory, server_name, heartbeat)
 
-        self.deathloop_deaths = deathloop_deaths
-        self.deathloop_seconds = deathloop_seconds
+        # todo - what if ini file is not present
+        # begin by reading in the config data
+        config = configparser.ConfigParser()
+        config.read('DeathLoopVaccine.ini')
+
+        base_dir = config.get('Everquest', 'BASE_DIRECTORY', fallback=None)
+        logs_dir = config.get('Everquest', 'LOGS_DIRECTORY', fallback='\\logs\\')
+        server_name = config.get('Everquest', 'SERVER_NAME', fallback='P1999Green')
+        heartbeat = config.getint('Everquest', 'HEARTBEAT', fallback=15)
+        self.deathloop_deaths = config.getint('DeathLoop', 'DEATHS', fallback=4)
+        self.deathloop_seconds = config.getint('DeathLoop', 'SECONDS', fallback=120)
+
+        # parent ctor
+        super().__init__(base_dir, logs_dir, server_name, heartbeat)
 
         # list of death messages
         # this will function as a scrolling queue, with the oldest message at position 0,
@@ -262,31 +263,18 @@ def get_eqgame_pid_list() -> list[int]:
 
 def main():
 
-    # todo - what if ini file is not present
-    # begin by reading in the config data
-    config = configparser.ConfigParser()
-    config.read('DeathLoopVaccine.ini')
-
-    base_dir = config.get('Everquest', 'BASE_DIRECTORY', fallback=None)
-    logs_dir = config.get('Everquest', 'LOGS_DIRECTORY', fallback='\\logs\\')
-    server_name = config.get('Everquest', 'SERVER_NAME', fallback='P1999Green')
-    heartbeat = config.getint('Everquest', 'HEARTBEAT', fallback=15)
-
-    dl_deaths = config.getint('DeathLoop', 'DEATHS', fallback=4)
-    dl_seconds = config.getint('DeathLoop', 'SECONDS', fallback=120)
+    # create and start the DLV parser
+    dlv = DeathLoopVaccine()
+    dlv.go()
 
     # print a startup message
     EverquestLogFile.starprint('-------------------------------------------------')
     EverquestLogFile.starprint('DeathLoopVaccine - Help prevent DeathLoop disease')
     EverquestLogFile.starprint('-------------------------------------------------')
     EverquestLogFile.starprint(f'Checking for '
-                               f'{dl_deaths} deaths in '
-                               f'{dl_seconds} seconds, '
+                               f'{dlv.deathloop_deaths} deaths in '
+                               f'{dlv.deathloop_seconds} seconds, '
                                f'with no player activity in the interim (AFK)')
-
-    # create and start the DLV parser
-    dlv = DeathLoopVaccine(base_dir, logs_dir, server_name, heartbeat, dl_deaths, dl_seconds)
-    dlv.go()
 
     # note that as soon as the main thread ends, so will the child threads
     while True:
