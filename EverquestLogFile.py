@@ -95,7 +95,10 @@ class EverquestLogFile(threading.Thread):
         files = glob.glob(mask)
         files.sort(key=os.path.getmtime, reverse=True)
 
-        # todo foo - what if there are no files in the list?
+        # if no files are found to parse, bail out with an exception
+        if len(files) == 0:
+            raise ValueError(f'Unable to open any log files in directory [{self.base_directory}]')
+
         latest_file = files[0]
 
         # extract the character name from the filename

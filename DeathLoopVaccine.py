@@ -46,12 +46,14 @@ class DeathLoopVaccine(EverquestLogFile.EverquestLogFile):
         ctor
         """
 
-        # todo - what if ini file is not present
         # begin by reading in the config data
         config = configparser.ConfigParser()
-        config.read('DeathLoopVaccine.ini')
+        ini_filename = 'DeathLoopVaccine.ini'
+        file_list = config.read(ini_filename)
+        if len(file_list) == 0:
+            raise ValueError(f'Unable to open ini file [{ini_filename}]')
 
-        base_dir = config.get('Everquest', 'BASE_DIRECTORY', fallback=None)
+        base_dir = config.get('Everquest', 'BASE_DIRECTORY', fallback='c:\\Everquest')
         logs_dir = config.get('Everquest', 'LOGS_DIRECTORY', fallback='\\logs\\')
         server_name = config.get('Everquest', 'SERVER_NAME', fallback='P1999Green')
         heartbeat = config.getint('Everquest', 'HEARTBEAT', fallback=15)
