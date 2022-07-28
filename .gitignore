@@ -1,6 +1,7 @@
 # specific files
 act.bat
 deact.bat
+*.ini
 
 # directories for this project
 pics/

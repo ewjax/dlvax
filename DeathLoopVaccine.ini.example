@@ -2,7 +2,7 @@
 [Everquest]
 
 # configure location of the everquest log files
-BASE_DIRECTORY = c:\users\ewjax\Documents\Gaming\Everquest-Project1999
+BASE_DIRECTORY = c:\Everquest
 LOGS_DIRECTORY = \logs\
 
 # which server
