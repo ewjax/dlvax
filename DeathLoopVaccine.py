@@ -265,14 +265,17 @@ def get_eqgame_pid_list() -> list[int]:
 
 def main():
 
+    # print a startup message
+    EverquestLogFile.starprint('')
+    EverquestLogFile.starprint('-------------------------------------------------')
+    EverquestLogFile.starprint('DeathLoopVaccine - Help prevent DeathLoop disease')
+    EverquestLogFile.starprint('-------------------------------------------------')
+    EverquestLogFile.starprint('')
+
     # create and start the DLV parser
     dlv = DeathLoopVaccine()
     dlv.go()
 
-    # print a startup message
-    EverquestLogFile.starprint('-------------------------------------------------')
-    EverquestLogFile.starprint('DeathLoopVaccine - Help prevent DeathLoop disease')
-    EverquestLogFile.starprint('-------------------------------------------------')
     EverquestLogFile.starprint(f'Checking for '
                                f'{dlv.deathloop_deaths} deaths in '
                                f'{dlv.deathloop_seconds} seconds, '
