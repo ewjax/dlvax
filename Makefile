@@ -7,7 +7,14 @@ setup: requirements.txt
 exe: DeathLoopVaccine.py EverquestLogFile.py
 	pyinstaller --onefile --icon data/icons/DeathLoopVaccine.ico DeathLoopVaccine.py
 
+zip:
+	cp DeathLoopVaccine.ini.example dist
+	cd dist && zip DeathLoopVaccine.zip DeathLoopVaccine.exe DeathLoopVaccine.ini.example
+
 clean:
-	rm ./__pycache__/*.*
+	rm dist/DeathLoopVaccine.exe
+	rm dist/DeathLoopVaccine.ini.example
+	rm dist/DeathLoopVaccine.zip
+
 
 
