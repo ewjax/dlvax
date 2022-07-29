@@ -7,7 +7,7 @@ The purpose of the DeathLoopVaccine utility is to simply monitor an Everquest lo
 In this case, we define the symptoms of a death loop in the following manner:
   - D deaths (default 4), in
   - T seconds (default 120),
-  - with no player activity (meleeing, casting, or communicating) in the interim.
+  - with no player activity (melee-ing, casting, or communicating) in the interim.
   
 The values for D and T are configurable in the DeathLoopVaccine.ini file.
 
@@ -34,11 +34,11 @@ Installation
 As a Windows executable:
   - Unzip the DeathLoopVaccine zip file
   - Copy DeathLoopVaccine.ini.example to DeathLoopVaccine.ini, and edit it for the location of your Everquest installation
-  - Ensure the .exe and .ini files are in the same directory, and double click the .exe file to run it
+  - Ensure the .exe and .ini files are in the same directory, and double-click the .exe file to run it
   - That's all that is needed.  The program will automatically begin monitoring the most recent character log file, and when you switch characters, it will automatically switch as well
   
 As a python script:
-  - Unzip the source file or clone the github repository to your local computer
+  - Unzip the source file or clone the GitHub repository to your local computer
   - Copy DeathLoopVaccine.ini.example to DeathLoopVaccine.ini, and edit it for the location of your Everquest installation
   - Using make:  Type the command
       - make setup
