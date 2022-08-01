@@ -1,6 +1,9 @@
 run:
 	py DeathLoopVaccine.py
 
+venv:
+	python -m venv .venv
+
 setup: requirements.txt
 	pip install -r requirements.txt
 
@@ -15,6 +18,9 @@ clean:
 	rm dist/DeathLoopVaccine.exe
 	rm dist/DeathLoopVaccine.ini.example
 	rm dist/DeathLoopVaccine.zip
+	rm build/DeathLoopVaccine/*.*
+	rmdir build/DeathLoopVaccine
+
 
 
 
